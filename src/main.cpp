@@ -2,7 +2,7 @@
 #include <fstream>
 #include <iostream>
 #include <vector>
-#include <ctime>
+#include <chrono>
 #include <cfloat>
 #include <cmath>
 #include <tuple>
@@ -49,20 +49,19 @@ vector<insertion> generate_insertion_cost(solution& s_, vector<int>&CL){
   int i=0, count =0;
 
   for(int r0 = 0, r1 = 1; count < s_.route.size() - 1; r0++, r1++){
-    cout << s_.route[r0] << "->" << s_.route[r1] << endl;
+    //cout << s_.route[r0] << "->" << s_.route[r1] << endl;
     int origin = s_.route[r0];
     int next_neighbour = s_.route[r1];
 
     for(auto r2 : CL){
       insertion_cost[i].node = r2;
-      insertion_cost[i].deleted_edge = make_tuple(origin, next_neighbour);
+      insertion_cost[i].deleted_edge = make_tuple(r0, r1);
       insertion_cost[i].cost = distance_matrix[origin][r2] + distance_matrix[r2][next_neighbour] - distance_matrix[origin][next_neighbour];
-      cout << "From: " << origin << " -> " << next_neighbour << " To: " << origin << " -> " << r2 << " -> " << next_neighbour << " | Cost: " <<  insertion_cost[i].cost << " Deleted Edge: " << get<0>(insertion_cost[i].deleted_edge) << "," << get<1>(insertion_cost[i].deleted_edge) << endl;
+      //cout << "From: " << origin << " -> " << next_neighbour << " To: " << origin << " -> " << r2 << " -> " << next_neighbour << " | Cost: " <<  insertion_cost[i].cost << " Deleted Edge: " << get<0>(insertion_cost[i].deleted_edge) << "," << get<1>(insertion_cost[i].deleted_edge) << endl;
       i++;
     }
     count++;
   }
-
   return insertion_cost;
 }
 
@@ -104,14 +103,26 @@ solution construction(vector<int>& CL) {
     //creates the list of candidates from CL that can be inserted in s' computing its insertion cost 
     vector<insertion> insertion_cost = generate_insertion_cost(s_, CL);
 
+    /*cout << endl << "AFTER SORTING" << endl;
+    for(auto k: insertion_cost){
+    cout << k.node << ":" << k.cost << " | ";
+    };*/
+
     sort(insertion_cost.begin(), insertion_cost.end(), less_than_cost());
+
+    /*cout << endl << "AFTER SORTING" << endl;
+    for(auto k: insertion_cost){
+    cout << k.node << ":" << k.cost << " | ";
+    };*/
 
     double r = (double) rand()/ RAND_MAX;
     int chosen_node = rand() % ((int) ceil(r * insertion_cost.size()));
 
-    s_.route.insert(s_.route.begin() + get<1>(insertion_cost[chosen_node].deleted_edge), insertion_cost[chosen_node].node);
+    //cout << get<1>(insertion_cost[chosen_node].deleted_edge) << endl;
 
-    //It can be done better
+    s_.route.insert(s_.route.begin() + (get<1>(insertion_cost[chosen_node].deleted_edge)), insertion_cost[chosen_node].node);
+
+    //Could it be done better?
     int aux = 0;
     while(true){
       if(insertion_cost[chosen_node].node == CL[aux]){
@@ -124,12 +135,12 @@ solution construction(vector<int>& CL) {
     //new solution cost
     s_.cost += insertion_cost[chosen_node].cost;
   }
-  
   return s_;
 }
 
 int main(int argc, char** argv) {
 
+  auto start = chrono::steady_clock::now();
   //printData();
 
   vector<int> CL;
@@ -144,11 +155,13 @@ int main(int argc, char** argv) {
   }
 
   s_ = construction(CL);
+  auto end = chrono::steady_clock::now();
 
-  cout << "cost:" << s_.cost << endl << "route:" << endl;
+  cout << "Cost:" << s_.cost << endl << "route:" << " ";
   for(i=0;i<s_.route.size();i++){
     cout << s_.route[i] << ' ';
   }
-
+  
+  cout << endl << "Elapsed Time: " << chrono::duration_cast<chrono::microseconds>(end - start).count() << " µs" <<endl;
   return 0;
 }
