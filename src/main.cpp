@@ -138,14 +138,138 @@ solution construction(vector<int>& CL) {
   return s_;
 }
 
+bool best_improvement_swap(solution& s_){
+
+  double best_delta = 0;
+  double delta, partial_cost, aux_cost, a, b, c, d, a_, b_, c_, d_;
+  int best_i, best_j;
+
+  for(int i =1; i< s_.route.size() - 1; i++){
+    
+    a = distance_matrix[s_.route[i-1]][s_.route[i]]; // (i-1)->(i)
+    b = distance_matrix[s_.route[i]][s_.route[i+1]]; // (i)->(i+1)
+
+    partial_cost = -a -b;
+
+    for(int j=i+1; j< s_.route.size() - 1; j++){
+
+      d = distance_matrix[s_.route[j]][s_.route[j+1]]; // (j)->(j+1)
+      a_ = distance_matrix[s_.route[i-1]][s_.route[j]]; // (i-1)->(j) -swap
+      d_ = distance_matrix[s_.route[i]][s_.route[j+1]]; // (i)->(j+1) -swap
+
+      aux_cost = -d + a_ + d_;
+
+      if(i==j-1){
+        b_ = distance_matrix[s_.route[j]][s_.route[i]]; // (j)->(i) -swap
+
+        delta = partial_cost + aux_cost + b_;
+      }
+      else{
+        c = distance_matrix[s_.route[i-1]][s_.route[j]]; // (j-1)->(j)
+        b_ = distance_matrix[s_.route[j]][s_.route[i+1]]; // (j)->(i+1) -swap
+        c_ = distance_matrix[s_.route[j-1]][s_.route[i]]; // (j-1)->(i) -swap
+
+        delta = partial_cost + aux_cost -c + b_ + c_;
+      }
+    
+      if(delta<best_delta){
+        best_i = i;
+        best_j = j;
+        best_delta = delta;
+      }
+    }
+  }
+  if(best_delta<0){
+    swap(s_.route[best_i], s_.route[best_j]);
+    s_.cost += best_delta;
+    return true;
+  }
+
+  return false;
+}
+
+bool best_improvement_2opt(solution& s_){
+  double partial_cost, delta, best_delta = 0;
+  int a, b, c, d, a_, b_, c_, d_, best_i, best_j;
+
+  for(int i = 1; i< s_.route.size() - 3; i++){
+    
+    a = distance_matrix[s_.route[i-1]][s_.route[i]];
+    partial_cost = - a;
+
+    for(int j = i + 2; j< s_.route.size() - 1; j++){
+
+      b = distance_matrix[s_.route[j]][s_.route[j+1]];
+      a_ = distance_matrix[s_.route[i-1]][s_.route[j]];
+      b_ = distance_matrix[s_.route[i]][s_.route[j+1]];
+      
+      delta = - a - b + a_ + b_;
+
+      if(delta < best_delta){
+        best_i = i;
+        best_j = j;
+        best_delta = delta;
+      }
+    }
+  }
+  if(best_delta < 0){
+    int j = best_j;
+    for(int i = best_i; i < j; i++){
+      swap(s_.route[i], s_.route[j]);
+      j--;
+    }
+    s_.cost += best_delta;
+    return true;
+  }
+  return false;
+}
+
+void local_search(solution& s_){
+  
+  std::vector<int> NL = {1,2,3,4,5};
+  bool improved = false;
+  
+  while(!NL.empty()){
+    int n = rand() % NL.size();
+    switch (NL[n]){
+      case 0:
+        improved = best_improvement_swap(s_);
+        break;
+      case 1:
+        improved = best_improvement_2opt(s_);
+        break;
+      case 2:
+        improved = false;
+        //improved = bestImprovementOrOpt(s_, 1); // Reinsertion
+        break;
+      case 3:
+        improved = false;
+        //improved = bestImprovementOrOpt(s_, 2); // Or-opt2
+        break;
+      case 4:
+        improved = false;
+        //improved = bestImprovementOrOpt(s_, 3); // Or-opt3
+        break;
+    }
+    
+    if (improved){
+      NL = {1,2,3,4,5};
+      //NL.erase(NL.begin() + n);
+    }
+    else{
+      NL.erase(NL.begin() + n);
+    }
+  }
+}
+
 int main(int argc, char** argv) {
 
   auto start = chrono::steady_clock::now();
   //printData();
 
-  vector<int> CL;
-  int i;
-  solution s_;
+  vector<int> CL, CL_;
+  int i, max_i, max_iter_ils, count;
+  solution s_, best_s, best_all_s;
 
   //read the instance through the auxiliary function ReadData.h based on the user input parameters
   readData(argc, argv, &dimension, &distance_matrix);
@@ -154,14 +278,65 @@ int main(int argc, char** argv) {
     CL.push_back(i);
   }
 
-  s_ = construction(CL);
+  if(dimension<150){
+    max_iter_ils = dimension/2.0;
+    //max_iter_ils = 10;
+  }
+  else{
+    //max_iter_ils = dimension;
+    max_iter_ils = 2;
+  }
+
+  max_i = 50;
+  best_all_s.cost = (double) INFINITY;
+
+  for(i=0; i< max_i; i++){
+    
+    CL_ = CL;
+    s_ = construction(CL_);
+    
+    //cout << "Initial Cost:" << s_.cost << endl << "Initial route:" << " ";
+    //for(i=0; i<s_.route.size(); i++){
+    //  cout << s_.route[i] << " ";
+    //}
+
+    best_s = s_;
+    count = 0;
+
+    while(count < max_iter_ils){
+      local_search(s_);
+      //cout << s_.cost << endl;
+      if(s_.cost < best_s.cost){
+        best_s = s_;
+        //cout << best_s.cost << endl;
+        count = 0;
+      }
+      count++;
+    }
+  if(best_s.cost < best_all_s.cost){
+    best_all_s = best_s;
+  }
+  }
+
   auto end = chrono::steady_clock::now();
 
-  cout << "Cost:" << s_.cost << endl << "route:" << " ";
-  for(i=0;i<s_.route.size();i++){
-    cout << s_.route[i] << ' ';
+  cout << endl << "Cost:" << best_all_s.cost << endl << "route:" << " ";
+  for(i=0;i<best_all_s.route.size();i++){
+    cout << best_all_s.route[i] << ' ';
   }
-  
-  cout << endl << "Elapsed Time: " << chrono::duration_cast<chrono::microseconds>(end - start).count() << " µs" <<endl;
+
+  cout << endl << "Elapsed Time: " << chrono::duration_cast<chrono::milliseconds>(end - start).count() << " ms" <<endl;
   return 0;
 }
+
+/*
+Cost:4456
+route: 1 2 7 6 5 12 13 3 4 14 10 9 8 11 1
+Elapsed Time: 501 µs
+*/
+
+/*
+Cost:3323
+route: 1 10 9 11 8 13 7 12 6 5 4 3 14 2 1 
+Elapsed Time: 3 ms
+*/
