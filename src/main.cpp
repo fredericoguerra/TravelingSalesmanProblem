@@ -224,6 +224,68 @@ bool best_improvement_2opt(solution& s_){
   return false;
 }
 
+bool best_improvement_or_opt(solution& s_, int c){
+  int i, j, best_i, best_j;
+  double best_delta = 0, delta;
+
+  switch(c){
+    
+    case 1:
+
+    for(i=1; i< s_.route.size()-1; i++){
+      for(j=1; j< s_.route.size()-1; j++){
+        if(i+1==j){
+          ;
+        }
+        else if(i<j){ 
+          delta = - distance_matrix[s_.route[i]][s_.route[i+1]] - distance_matrix[s_.route[j-1]][s_.route[j]]
+                  - distance_matrix[s_.route[j]][s_.route[j+1]] + distance_matrix[s_.route[i]][s_.route[j]]
+                  + distance_matrix[s_.route[j]][s_.route[i+1]] + distance_matrix[s_.route[j-1]][s_.route[j+1]];
+        }
+        else if(i==j+1){
+          delta = - distance_matrix[s_.route[i]][s_.route[i+1]] - distance_matrix[s_.route[j]][s_.route[i]]
+                  - distance_matrix[s_.route[j-1]][s_.route[j]] + distance_matrix[s_.route[i]][s_.route[j]]
+                  + distance_matrix[s_.route[j]][s_.route[i+1]] + distance_matrix[s_.route[j-1]][s_.route[i]];
+        }
+        else if(j<i){
+          delta = - distance_matrix[s_.route[i]][s_.route[i+1]] - distance_matrix[s_.route[j]][s_.route[j+1]]
+                  - distance_matrix[s_.route[j-1]][s_.route[j]] + distance_matrix[s_.route[i]][s_.route[j]]
+                  + distance_matrix[s_.route[j]][s_.route[i+1]] + distance_matrix[s_.route[j-1]][s_.route[j+1]];
+        }
+        else{
+          continue;
+        }
+        if(delta < best_delta){
+        best_i = i;
+        best_j = j;
+        best_delta = delta;
+        }
+      }
+    }
+    if(best_delta<0){
+      //for(int i=0;i<s_.route.size();i++){
+      //  cout << s_.route[i] << " ";
+      //}
+      //cout << endl << best_i << best_j;
+      //cout << endl << "cost " << best_delta << endl; 
+      if(best_i<best_j){
+        s_.route.insert(s_.route.begin() + best_i + 1, s_.route[best_j]);
+        s_.route.erase(s_.route.begin() + best_j + 1);
+      }
+      else{
+        s_.route.insert(s_.route.begin() + best_i + 1, s_.route[best_j]);
+        s_.route.erase(s_.route.begin()+best_j);
+      }
+      //cout << "previous cost: " << s_.cost << endl;
+      //cout << "best delta: " << best_delta << endl;
+      s_.cost += best_delta;
+      //cout << "new cost: " << s_.cost << endl;
+      return true;
+    }
+  }
+  return false;
+}
+
 void local_search(solution& s_){
   
   std::vector<int> NL = {1,2,3,4,5};
@@ -233,17 +295,19 @@ void local_search(solution& s_){
     int n = rand() % NL.size();
     switch (NL[n]){
       case 0:
+        //improved = false;
         improved = best_improvement_swap(s_);
         break;
       case 1:
+        //improved = false;
         improved = best_improvement_2opt(s_);
         break;
       case 2:
-        improved = false;
-        //improved = bestImprovementOrOpt(s_, 1); // Reinsertion
+        improved = best_improvement_or_opt(s_, 1); // Reinsertion
+        //improved = false;
         break;
       case 3:
-        improved = false;
+        //improved = false;
         //improved = bestImprovementOrOpt(s_, 2); // Or-opt2
         break;
       case 4:
@@ -254,7 +318,6 @@ void local_search(solution& s_){
     
     if (improved){
       NL = {1,2,3,4,5};
-      //NL.erase(NL.begin() + n);
     }
     else{
       NL.erase(NL.begin() + n);
