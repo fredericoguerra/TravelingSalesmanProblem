@@ -138,6 +138,20 @@ solution construction(vector<int>& CL) {
   return s_;
 }
 
+bool assessment_cost(solution& s_){
+  int i;
+  double true_cost=0;
+  for(i=1;i<s_.route.size();i++){
+    true_cost += distance_matrix[s_.route[i-1]][s_.route[i]];
+  }
+  if(s_.cost != true_cost){
+    return true;
+  }
+  else{
+    return false;
+  }
+}
+
 bool best_improvement_swap(solution& s_){
 
   double best_delta = 0;
@@ -179,12 +193,15 @@ bool best_improvement_swap(solution& s_){
       }
     }
   }
+  
   if(best_delta<0){
     swap(s_.route[best_i], s_.route[best_j]);
     s_.cost += best_delta;
+    if(assessment_cost(s_)){
+      cout << "Wrong 0 swap!" << endl;
+      }
     return true;
   }
-
   return false;
 }
 
@@ -219,6 +236,9 @@ bool best_improvement_2opt(solution& s_){
       j--;
     }
     s_.cost += best_delta;
+    if(assessment_cost(s_)){
+      cout << "###### Wrong 2 opt!" << endl;
+  }
     return true;
   }
   return false;
@@ -229,9 +249,7 @@ bool best_improvement_or_opt(solution& s_, int c){
   double best_delta = 0, delta;
 
   switch(c){
-    
     case 1:
-
     for(i=1; i< s_.route.size()-1; i++){
       for(j=1; j< s_.route.size()-1; j++){
         if(i+1==j){
@@ -263,10 +281,11 @@ bool best_improvement_or_opt(solution& s_, int c){
       }
     }
     if(best_delta<0){
+      //cout << "previous route: " << endl;
       //for(int i=0;i<s_.route.size();i++){
       //  cout << s_.route[i] << " ";
       //}
-      //cout << endl << best_i << best_j;
+      //cout << endl << best_i << " // " << best_j;
       //cout << endl << "cost " << best_delta << endl; 
       if(best_i<best_j){
         s_.route.insert(s_.route.begin() + best_i + 1, s_.route[best_j]);
@@ -276,12 +295,146 @@ bool best_improvement_or_opt(solution& s_, int c){
         s_.route.insert(s_.route.begin() + best_i + 1, s_.route[best_j]);
         s_.route.erase(s_.route.begin()+best_j);
       }
-      //cout << "previous cost: " << s_.cost << endl;
-      //cout << "best delta: " << best_delta << endl;
       s_.cost += best_delta;
-      //cout << "new cost: " << s_.cost << endl;
+      //cout << "best delta: " << best_delta << endl;
+      //cout << "new route: " << endl;
+      //for(int i=0;i<s_.route.size();i++){
+      //  cout << s_.route[i] << " ";
+      //}
+      //cout << endl << endl;
+      if(assessment_cost(s_)){
+        cout << "###### Wrong Reinsertion!" << endl;
+        //cout << "best delta: " << best_delta << endl;
+        //cout << "new route: " << endl;
+        //for(int i=0;i<s_.route.size();i++){
+        //cout << s_.route[i] << " ";
+        //}
+        //cout << endl << endl;
+        }
       return true;
     }
+    else{
+      return false;
+    }
+    case 2:
+      for(i=1; i<s_.route.size()-1;i++){
+        for(j=1; j<s_.route.size()-2;j++){//changed upper limit from -3 to -2
+          if(i+1<j || j<i-2){
+            delta = - distance_matrix[s_.route[i]][s_.route[i+1]] - distance_matrix[s_.route[j-1]][s_.route[j]]
+                    - distance_matrix[s_.route[j+1]][s_.route[j+2]] + distance_matrix[s_.route[i]][s_.route[j]]
+                    + distance_matrix[s_.route[j+1]][s_.route[i+1]] + distance_matrix[s_.route[j-1]][s_.route[j+2]];
+          }
+          else{
+            continue;
+          }
+          if(delta < best_delta){
+            best_i = i;
+            best_j = j;
+            best_delta = delta;
+          }
+        }
+      }
+      if(best_delta<0){
+        //cout << "previous route: " << endl;
+        //for(int i=0;i<s_.route.size();i++){
+        //  cout << s_.route[i] << " ";
+        //}
+        if(best_i < best_j){
+          //cout << endl << "best i: " << best_i << " best node i: " << s_.route[best_i] << endl;
+          //cout << "best j: " << best_j << " best node j: " << s_.route[best_j] << endl;
+          s_.route.insert(s_.route.begin() + best_i + 1, s_.route[best_j]);
+          s_.route.insert(s_.route.begin() + best_i + 2, s_.route[best_j + 2]);
+          s_.route.erase(s_.route.begin() + best_j + 3);
+          s_.route.erase(s_.route.begin() + best_j + 2);
+        }
+        else{
+          //cout << endl << "best i: " << best_i << " best node i: " << s_.route[best_i] << endl;
+          //cout << "best j: " << best_j << " best node j: " << s_.route[best_j] << endl;
+          s_.route.insert(s_.route.begin() + best_i + 1, s_.route[best_j]);
+          s_.route.insert(s_.route.begin() + best_i + 2, s_.route[best_j+1]);
+          s_.route.erase(s_.route.begin()+best_j+1);
+          s_.route.erase(s_.route.begin()+best_j);
+        }
+        s_.cost += best_delta;
+
+        //cout << "best delta: " << best_delta << endl;
+        //cout << "new route: " << endl;
+        //for(int i=0;i<s_.route.size();i++){
+        //  cout << s_.route[i] << " ";
+        //}
+        //cout << endl << endl;
+        if(assessment_cost(s_)){
+          cout << "###### Wrong Or-2opt!" << endl;
+          }
+        //else{
+        //  cout << "Right Or-2opt!" << endl;
+        //}
+        return true;
+      }
+      else{
+      return false;
+    }
+    case 3:
+      for(i=1; i<s_.route.size()-1;i++){
+        for(j=1; j<s_.route.size()-3;j++){//changed from -4 to -3
+          if(i+1<j || j<i-3){
+            delta = - distance_matrix[s_.route[i]][s_.route[i+1]] - distance_matrix[s_.route[j-1]][s_.route[j]]
+                    - distance_matrix[s_.route[j+2]][s_.route[j+3]] + distance_matrix[s_.route[i]][s_.route[j]]
+                    + distance_matrix[s_.route[j+2]][s_.route[i+1]] + distance_matrix[s_.route[j-1]][s_.route[j+3]];
+          }
+          else{
+            continue;
+          }
+          if(delta < best_delta){
+            best_i = i;
+            best_j = j;
+            best_delta = delta;
+          }
+        }
+      }
+      if(best_delta<0){
+        //cout << "previous route: " << endl;
+        //for(int i=0;i<s_.route.size();i++){
+        //  cout << s_.route[i] << " ";
+        //}
+        if(best_i < best_j){
+        //  cout << endl << "best i: " << best_i << " best node i: " << s_.route[best_i] << endl;
+        //  cout << "best j: " << best_j << " best node j: " << s_.route[best_j] << endl;
+          s_.route.insert(s_.route.begin() + best_i + 1, s_.route[best_j]);
+          s_.route.insert(s_.route.begin() + best_i + 2, s_.route[best_j + 2]);
+          s_.route.insert(s_.route.begin() + best_i + 3, s_.route[best_j + 4]);
+          s_.route.erase(s_.route.begin() + best_j + 5);
+          s_.route.erase(s_.route.begin() + best_j + 4);
+          s_.route.erase(s_.route.begin() + best_j + 3);
+        }
+        else{
+          //cout << endl << "best i: " << best_i << " best node i: " << s_.route[best_i] << endl;
+          //cout << "best j: " << best_j << " best node j: " << s_.route[best_j] << endl;
+          s_.route.insert(s_.route.begin() + best_i + 1, s_.route[best_j]);
+          s_.route.insert(s_.route.begin() + best_i + 2, s_.route[best_j+1]);
+          s_.route.insert(s_.route.begin() + best_i + 3, s_.route[best_j+2]);
+          s_.route.erase(s_.route.begin()+best_j+2);
+          s_.route.erase(s_.route.begin()+best_j+1);
+          s_.route.erase(s_.route.begin()+best_j);
+        }
+        s_.cost += best_delta;
+        //cout << "best delta: " << best_delta << endl;
+        //cout << "new route: " << endl;
+        //for(int i=0;i<s_.route.size();i++){
+        //  cout << s_.route[i] << " ";
+        //}
+        //cout << endl << endl;
+        if(assessment_cost(s_)){
+          cout << "######### Wrong Or-3opt!" << endl;
+          }
+        return true;
+      }
+      else{
+      return false;
+    }
+    default:
+      cout << "Error: best_improvement_or_opt invalid parameter." << endl;
+      break;
   }
   return false;
 }
@@ -308,11 +461,11 @@ void local_search(solution& s_){
         break;
       case 3:
         //improved = false;
-        //improved = bestImprovementOrOpt(s_, 2); // Or-opt2
+        improved = best_improvement_or_opt(s_, 2); // Or-opt2
         break;
       case 4:
-        improved = false;
-        //improved = bestImprovementOrOpt(s_, 3); // Or-opt3
+        //improved = false;
+        improved = best_improvement_or_opt(s_, 3); // Or-opt3
         break;
     }
     
@@ -350,7 +503,7 @@ int main(int argc, char** argv) {
     max_iter_ils = 2;
   }
 
-  max_i = 50;
+  max_i = 100;
   best_all_s.cost = (double) INFINITY;
 
   for(i=0; i< max_i; i++){
@@ -402,4 +555,10 @@ Elapsed Time: 501 µs
 Cost:3323
 route: 1 10 9 11 8 13 7 12 6 5 4 3 14 2 1 
 Elapsed Time: 3 ms
+*/
+
+/*
+Cost:3181
+route: 1 2 3 3 12 6 5 5 7 13 11 11 9 8 1 
+Elapsed Time: 7 ms
 */
