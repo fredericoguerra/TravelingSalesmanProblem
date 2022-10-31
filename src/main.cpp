@@ -43,6 +43,24 @@ void printData() {
   }
 }
 
+template<typename T>
+std::vector<T> slice(std::vector<T> const &v, int m, int n)
+{
+    auto first = v.cbegin() + m;
+    auto last = v.cbegin() + n + 1;
+ 
+    std::vector<T> vec(first, last);
+    return vec;
+}
+ 
+void show_vector(vector<int> vec){
+  int i;
+  for(i=0; i< vec.size(); i++){
+      cout << vec[i] << " ";
+    }
+  cout << endl;
+}
+
 vector<insertion> generate_insertion_cost(solution& s_, vector<int>&CL){
   //generates a full list of edges between s' nodes and the nodes from candidates list
   vector<insertion> insertion_cost((s_.route.size()-1) * CL.size());
@@ -138,13 +156,61 @@ solution construction(vector<int>& CL) {
   return s_;
 }
 
-bool assessment_cost(solution& s_){
+solution pertubation(solution s_){
+  int bridge1_size, bridge2_size, i, j, max_i, min_j, max_j, j_range;
+  vector<int> bridge1, bridge2;
+  double new_route_cost = 0;
+
+  if(s_.route.size()<30){
+    bridge1_size = rand() % 2 + 1; // rand % range + min
+    bridge2_size = rand() % 2 + 1; // rand % range + min
+  }
+  else{
+    bridge1_size = rand() % s_.route.size()/10 + 1;
+    bridge2_size = rand() % s_.route.size()/10 + 1;
+  }
+  //cout << "bridge1: " << bridge1_size << endl << "bridge2: " << bridge2_size << endl;
+  max_i = s_.route.size() - 1 - bridge2_size - bridge1_size;
+  //cout << "max_i: " << max_i << endl;
+  i = rand() % max_i + 1;
+  //cout << "i: " << i << endl;
+  max_j = s_.route.size() - bridge2_size;
+  //cout << "max_j: " << max_j << endl;
+
+  min_j = i + bridge1_size;
+  //cout << "min_j: " << min_j << endl;
+
+  j_range = max_j - min_j;
+  j = rand() % j_range + min_j;
+  //cout << "j: " << j << endl << endl;
+
+  bridge1 = slice(s_.route, i, i + bridge1_size-1);
+  bridge2 = slice(s_.route, j, j + bridge2_size-1);
+  //show_vector(s_.route);
+  //show_vector(bridge1);
+  s_.route.insert(s_.route.begin() + j, bridge1.begin(), bridge1.end());
+  //show_vector(s_.route);
+  s_.route.erase(s_.route.begin() + i, s_.route.begin() + i + bridge1_size);
+  //show_vector(s_.route);
+  //show_vector(bridge2);
+  s_.route.insert(s_.route.begin() + i, bridge2.begin(), bridge2.end());
+  //show_vector(s_.route);
+  s_.route.erase(s_.route.begin() + j + bridge2_size, s_.route.begin() + j + 2*bridge2_size);
+  for(i=1; i<s_.route.size(); i++){
+    new_route_cost += distance_matrix[s_.route[i-1]][s_.route[i]];
+  }
+  s_.cost = new_route_cost;
+  //cout << "new cost: " << s_.cost << endl;
+  return s_;
+}
+
+bool assessment_cost(solution& s){
   int i;
   double true_cost=0;
-  for(i=1;i<s_.route.size();i++){
-    true_cost += distance_matrix[s_.route[i-1]][s_.route[i]];
+  for(i=1;i<s.route.size();i++){
+    true_cost += distance_matrix[s.route[i-1]][s.route[i]];
   }
-  if(s_.cost != true_cost){
+  if(s.cost != true_cost){
     return true;
   }
   else{
@@ -197,9 +263,9 @@ bool best_improvement_swap(solution& s_){
   if(best_delta<0){
     swap(s_.route[best_i], s_.route[best_j]);
     s_.cost += best_delta;
-    if(assessment_cost(s_)){
-      cout << "Wrong 0 swap!" << endl;
-      }
+    //if(assessment_cost(s_)){
+    //  cout << "Wrong 0 swap!" << endl;
+    //  }
     return true;
   }
   return false;
@@ -236,9 +302,9 @@ bool best_improvement_2opt(solution& s_){
       j--;
     }
     s_.cost += best_delta;
-    if(assessment_cost(s_)){
-      cout << "###### Wrong 2 opt!" << endl;
-  }
+    //if(assessment_cost(s_)){
+    //  cout << "###### Wrong 2 opt!" << endl;
+  //}
     return true;
   }
   return false;
@@ -302,15 +368,15 @@ bool best_improvement_or_opt(solution& s_, int c){
       //  cout << s_.route[i] << " ";
       //}
       //cout << endl << endl;
-      if(assessment_cost(s_)){
-        cout << "###### Wrong Reinsertion!" << endl;
+      //if(assessment_cost(s_)){
+      //  cout << "###### Wrong Reinsertion!" << endl;
         //cout << "best delta: " << best_delta << endl;
         //cout << "new route: " << endl;
         //for(int i=0;i<s_.route.size();i++){
         //cout << s_.route[i] << " ";
         //}
         //cout << endl << endl;
-        }
+      //  }
       return true;
     }
     else{
@@ -363,9 +429,9 @@ bool best_improvement_or_opt(solution& s_, int c){
         //  cout << s_.route[i] << " ";
         //}
         //cout << endl << endl;
-        if(assessment_cost(s_)){
-          cout << "###### Wrong Or-2opt!" << endl;
-          }
+        //if(assessment_cost(s_)){
+        //  cout << "###### Wrong Or-2opt!" << endl;
+        //  }
         //else{
         //  cout << "Right Or-2opt!" << endl;
         //}
@@ -424,9 +490,9 @@ bool best_improvement_or_opt(solution& s_, int c){
         //  cout << s_.route[i] << " ";
         //}
         //cout << endl << endl;
-        if(assessment_cost(s_)){
-          cout << "######### Wrong Or-3opt!" << endl;
-          }
+        //if(assessment_cost(s_)){
+        //  cout << "######### Wrong Or-3opt!" << endl;
+        //  }
         return true;
       }
       else{
@@ -494,16 +560,16 @@ int main(int argc, char** argv) {
     CL.push_back(i);
   }
 
-  if(dimension<150){
+  if(dimension<=150){
     max_iter_ils = dimension/2.0;
     //max_iter_ils = 10;
   }
   else{
-    //max_iter_ils = dimension;
-    max_iter_ils = 2;
+    max_iter_ils = dimension;
+    //max_iter_ils = 2;
   }
 
-  max_i = 100;
+  max_i = 50;
   best_all_s.cost = (double) INFINITY;
 
   for(i=0; i< max_i; i++){
@@ -527,6 +593,9 @@ int main(int argc, char** argv) {
         //cout << best_s.cost << endl;
         count = 0;
       }
+      s_ = pertubation(best_s);
+      //cout << s_.cost << endl;
+      //cout << count << endl;
       count++;
     }
   if(best_s.cost < best_all_s.cost){
