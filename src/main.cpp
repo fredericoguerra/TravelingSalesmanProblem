@@ -27,6 +27,7 @@ struct solution{
   double cost; //cost of the route
 };
 
+//cost comparison structure
 struct less_than_cost{
   inline bool operator() (const insertion& insertion1, const insertion& insertion2){
     return(insertion1.cost < insertion2.cost);
@@ -67,7 +68,7 @@ vector<insertion> generate_insertion_cost(solution& s_, vector<int>&CL){
   int i=0, count =0;
 
   for(int r0 = 0, r1 = 1; count < s_.route.size() - 1; r0++, r1++){
-    //cout << s_.route[r0] << "->" << s_.route[r1] << endl;
+    
     int origin = s_.route[r0];
     int next_neighbour = s_.route[r1];
 
@@ -75,7 +76,7 @@ vector<insertion> generate_insertion_cost(solution& s_, vector<int>&CL){
       insertion_cost[i].node = r2;
       insertion_cost[i].deleted_edge = make_tuple(r0, r1);
       insertion_cost[i].cost = distance_matrix[origin][r2] + distance_matrix[r2][next_neighbour] - distance_matrix[origin][next_neighbour];
-      //cout << "From: " << origin << " -> " << next_neighbour << " To: " << origin << " -> " << r2 << " -> " << next_neighbour << " | Cost: " <<  insertion_cost[i].cost << " Deleted Edge: " << get<0>(insertion_cost[i].deleted_edge) << "," << get<1>(insertion_cost[i].deleted_edge) << endl;
+      
       i++;
     }
     count++;
@@ -95,52 +96,28 @@ solution construction(vector<int>& CL) {
   // 
   for(count = 1; count <= 3; count++){
     
-    /*for(i=0; i<CL.size();i++){
-      cout << CL[i] << ' ';
-    }*/
-    
     random_index = rand() % CL.size();
     s_.route.insert(s_.route.end() - 1, CL[random_index]);
     CL.erase(CL.begin() + random_index);
     
-    /*for(i=0; i< s_.route.size();i++){
-      cout << s_.route[i] << ' ';
-    }*/
   };
 
   //computes the cost of the initial route after randomly adding the 3 nodes in the route.
   for(count = 1; count <= 4; count++){
-    //cout << s_.cost << endl;
-    //cout << s_.route[count-1] << '-' << s_.route[count] << endl;
     s_.cost += distance_matrix[s_.route[count-1]][s_.route[count]];
-    //cout << s_.cost << endl;
   };
 
   while(!CL.empty()){
-  //for(i=1;i<2;i++){
-    //creates the list of candidates from CL that can be inserted in s' computing its insertion cost 
+    //creates a list of candidates from CL that can be inserted in s' computing its insertion cost 
     vector<insertion> insertion_cost = generate_insertion_cost(s_, CL);
 
-    /*cout << endl << "AFTER SORTING" << endl;
-    for(auto k: insertion_cost){
-    cout << k.node << ":" << k.cost << " | ";
-    };*/
-
     sort(insertion_cost.begin(), insertion_cost.end(), less_than_cost());
-
-    /*cout << endl << "AFTER SORTING" << endl;
-    for(auto k: insertion_cost){
-    cout << k.node << ":" << k.cost << " | ";
-    };*/
 
     double r = (double) rand()/ RAND_MAX;
     int chosen_node = rand() % ((int) ceil(r * insertion_cost.size()));
 
-    //cout << get<1>(insertion_cost[chosen_node].deleted_edge) << endl;
-
     s_.route.insert(s_.route.begin() + (get<1>(insertion_cost[chosen_node].deleted_edge)), insertion_cost[chosen_node].node);
 
-    //Could it be done better?
     int aux = 0;
     while(true){
       if(insertion_cost[chosen_node].node == CL[aux]){
@@ -169,38 +146,29 @@ solution pertubation(solution s_){
     bridge1_size = rand() % s_.route.size()/10 + 1;
     bridge2_size = rand() % s_.route.size()/10 + 1;
   }
-  //cout << "bridge1: " << bridge1_size << endl << "bridge2: " << bridge2_size << endl;
+  
   max_i = s_.route.size() - 1 - bridge2_size - bridge1_size;
-  //cout << "max_i: " << max_i << endl;
   i = rand() % max_i + 1;
-  //cout << "i: " << i << endl;
   max_j = s_.route.size() - bridge2_size;
-  //cout << "max_j: " << max_j << endl;
-
   min_j = i + bridge1_size;
-  //cout << "min_j: " << min_j << endl;
-
   j_range = max_j - min_j;
   j = rand() % j_range + min_j;
-  //cout << "j: " << j << endl << endl;
 
   bridge1 = slice(s_.route, i, i + bridge1_size-1);
   bridge2 = slice(s_.route, j, j + bridge2_size-1);
-  //show_vector(s_.route);
-  //show_vector(bridge1);
+
   s_.route.insert(s_.route.begin() + j, bridge1.begin(), bridge1.end());
-  //show_vector(s_.route);
   s_.route.erase(s_.route.begin() + i, s_.route.begin() + i + bridge1_size);
-  //show_vector(s_.route);
-  //show_vector(bridge2);
+
   s_.route.insert(s_.route.begin() + i, bridge2.begin(), bridge2.end());
-  //show_vector(s_.route);
   s_.route.erase(s_.route.begin() + j + bridge2_size, s_.route.begin() + j + 2*bridge2_size);
+
   for(i=1; i<s_.route.size(); i++){
     new_route_cost += distance_matrix[s_.route[i-1]][s_.route[i]];
   }
+
   s_.cost = new_route_cost;
-  //cout << "new cost: " << s_.cost << endl;
+
   return s_;
 }
 
@@ -263,9 +231,6 @@ bool best_improvement_swap(solution& s_){
   if(best_delta<0){
     swap(s_.route[best_i], s_.route[best_j]);
     s_.cost += best_delta;
-    //if(assessment_cost(s_)){
-    //  cout << "Wrong 0 swap!" << endl;
-    //  }
     return true;
   }
   return false;
@@ -302,9 +267,6 @@ bool best_improvement_2opt(solution& s_){
       j--;
     }
     s_.cost += best_delta;
-    //if(assessment_cost(s_)){
-    //  cout << "###### Wrong 2 opt!" << endl;
-  //}
     return true;
   }
   return false;
@@ -347,12 +309,6 @@ bool best_improvement_or_opt(solution& s_, int c){
       }
     }
     if(best_delta<0){
-      //cout << "previous route: " << endl;
-      //for(int i=0;i<s_.route.size();i++){
-      //  cout << s_.route[i] << " ";
-      //}
-      //cout << endl << best_i << " // " << best_j;
-      //cout << endl << "cost " << best_delta << endl; 
       if(best_i<best_j){
         s_.route.insert(s_.route.begin() + best_i + 1, s_.route[best_j]);
         s_.route.erase(s_.route.begin() + best_j + 1);
@@ -362,21 +318,6 @@ bool best_improvement_or_opt(solution& s_, int c){
         s_.route.erase(s_.route.begin()+best_j);
       }
       s_.cost += best_delta;
-      //cout << "best delta: " << best_delta << endl;
-      //cout << "new route: " << endl;
-      //for(int i=0;i<s_.route.size();i++){
-      //  cout << s_.route[i] << " ";
-      //}
-      //cout << endl << endl;
-      //if(assessment_cost(s_)){
-      //  cout << "###### Wrong Reinsertion!" << endl;
-        //cout << "best delta: " << best_delta << endl;
-        //cout << "new route: " << endl;
-        //for(int i=0;i<s_.route.size();i++){
-        //cout << s_.route[i] << " ";
-        //}
-        //cout << endl << endl;
-      //  }
       return true;
     }
     else{
@@ -401,40 +342,19 @@ bool best_improvement_or_opt(solution& s_, int c){
         }
       }
       if(best_delta<0){
-        //cout << "previous route: " << endl;
-        //for(int i=0;i<s_.route.size();i++){
-        //  cout << s_.route[i] << " ";
-        //}
         if(best_i < best_j){
-          //cout << endl << "best i: " << best_i << " best node i: " << s_.route[best_i] << endl;
-          //cout << "best j: " << best_j << " best node j: " << s_.route[best_j] << endl;
           s_.route.insert(s_.route.begin() + best_i + 1, s_.route[best_j]);
           s_.route.insert(s_.route.begin() + best_i + 2, s_.route[best_j + 2]);
           s_.route.erase(s_.route.begin() + best_j + 3);
           s_.route.erase(s_.route.begin() + best_j + 2);
         }
         else{
-          //cout << endl << "best i: " << best_i << " best node i: " << s_.route[best_i] << endl;
-          //cout << "best j: " << best_j << " best node j: " << s_.route[best_j] << endl;
           s_.route.insert(s_.route.begin() + best_i + 1, s_.route[best_j]);
           s_.route.insert(s_.route.begin() + best_i + 2, s_.route[best_j+1]);
           s_.route.erase(s_.route.begin()+best_j+1);
           s_.route.erase(s_.route.begin()+best_j);
         }
         s_.cost += best_delta;
-
-        //cout << "best delta: " << best_delta << endl;
-        //cout << "new route: " << endl;
-        //for(int i=0;i<s_.route.size();i++){
-        //  cout << s_.route[i] << " ";
-        //}
-        //cout << endl << endl;
-        //if(assessment_cost(s_)){
-        //  cout << "###### Wrong Or-2opt!" << endl;
-        //  }
-        //else{
-        //  cout << "Right Or-2opt!" << endl;
-        //}
         return true;
       }
       else{
@@ -514,23 +434,18 @@ void local_search(solution& s_){
     int n = rand() % NL.size();
     switch (NL[n]){
       case 0:
-        //improved = false;
         improved = best_improvement_swap(s_);
         break;
       case 1:
-        //improved = false;
         improved = best_improvement_2opt(s_);
         break;
       case 2:
         improved = best_improvement_or_opt(s_, 1); // Reinsertion
-        //improved = false;
         break;
       case 3:
-        //improved = false;
         improved = best_improvement_or_opt(s_, 2); // Or-opt2
         break;
       case 4:
-        //improved = false;
         improved = best_improvement_or_opt(s_, 3); // Or-opt3
         break;
     }
@@ -547,7 +462,6 @@ void local_search(solution& s_){
 int main(int argc, char** argv) {
 
   auto start = chrono::steady_clock::now();
-  //printData();
 
   vector<int> CL, CL_;
   int i, max_i, max_iter_ils, count;
@@ -562,11 +476,9 @@ int main(int argc, char** argv) {
 
   if(dimension<=150){
     max_iter_ils = dimension/2.0;
-    //max_iter_ils = 10;
   }
   else{
     max_iter_ils = dimension;
-    //max_iter_ils = 2;
   }
 
   max_i = 50;
@@ -576,26 +488,17 @@ int main(int argc, char** argv) {
     
     CL_ = CL;
     s_ = construction(CL_);
-    
-    //cout << "Initial Cost:" << s_.cost << endl << "Initial route:" << " ";
-    //for(i=0; i<s_.route.size(); i++){
-    //  cout << s_.route[i] << " ";
-    //}
 
     best_s = s_;
     count = 0;
 
     while(count < max_iter_ils){
       local_search(s_);
-      //cout << s_.cost << endl;
       if(s_.cost < best_s.cost){
         best_s = s_;
-        //cout << best_s.cost << endl;
         count = 0;
       }
       s_ = pertubation(best_s);
-      //cout << s_.cost << endl;
-      //cout << count << endl;
       count++;
     }
   if(best_s.cost < best_all_s.cost){
@@ -613,21 +516,3 @@ int main(int argc, char** argv) {
   cout << endl << "Elapsed Time: " << chrono::duration_cast<chrono::milliseconds>(end - start).count() << " ms" <<endl;
   return 0;
 }
-
-/*
-Cost:4456
-route: 1 2 7 6 5 12 13 3 4 14 10 9 8 11 1
-Elapsed Time: 501 µs
-*/
-
-/*
-Cost:3323
-route: 1 10 9 11 8 13 7 12 6 5 4 3 14 2 1 
-Elapsed Time: 3 ms
-*/
-
-/*
-Cost:3181
-route: 1 2 3 3 12 6 5 5 7 13 11 11 9 8 1 
-Elapsed Time: 7 ms
-*/
